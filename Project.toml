@@ -1,0 +1,10 @@
+name = "CEnum"
+uuid = "c837534c-1a60-11e9-3eae-4140c25f3acf"
+authors = ["SimonDanisch <sdanisch@gmail.com>", "Gnimuc <qiyupei@gmail.com>"]
+version = "0.1.0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
