@@ -5,6 +5,8 @@ using Test
 @test orange == kiwi
 @test apple | orange == 3
 @test apple & orange == 0
+@test apple + 1 == 2
+@test kiwi - 1 == 1
 
 @cenum(Boolean{Bool}, alternativefact, fact)
 @test alternativefact == false

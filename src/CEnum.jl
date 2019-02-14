@@ -13,6 +13,11 @@ Base.:&(a::UInt32, b::T) where {T<:Cenum{UInt32}} = b & a
 Base.:(==)(a::Integer, b::Cenum{T}) where {T<:Integer} = a == T(b)
 Base.:(==)(a::Cenum, b::Integer) = b == a
 
+Base.:+(a::S, b::T) where {S<:Integer,T<:Cenum} = a + S(b)
+Base.:+(a::T, b::S) where {S<:Integer,T<:Cenum} = S(a) + b
+Base.:-(a::S, b::T) where {S<:Integer,T<:Cenum} = a - S(b)
+Base.:-(a::T, b::S) where {S<:Integer,T<:Cenum} = S(a) - b
+
 # typemin and typemax won't change for an enum, so we might as well inline them per type
 Base.typemax(::Type{T}) where {T<:Cenum} = last(enum_values(T))
 Base.typemin(::Type{T}) where {T<:Cenum} = first(enum_values(T))
