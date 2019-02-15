@@ -1,5 +1,5 @@
 name = "CEnum"
-uuid = "c837534c-1a60-11e9-3eae-4140c25f3acf"
+uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 authors = ["SimonDanisch <sdanisch@gmail.com>", "Gnimuc <qiyupei@gmail.com>"]
 
 [extras]
