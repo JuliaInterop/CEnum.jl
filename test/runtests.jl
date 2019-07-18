@@ -10,3 +10,10 @@ using Test
 
 @cenum(Boolean{Bool}, alternativefact, fact)
 @test alternativefact == false
+
+@cenum(Day, Mon=1, Tue, Wed=3, suiyoubi=3, Fri=5, Sat)
+@test Mon == 1
+@test Tue == 2
+@test Wed == 3 == suiyoubi
+@test Fri == 5
+@test Sat == 6

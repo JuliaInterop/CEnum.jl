@@ -89,6 +89,7 @@ macro cenum(name, args...)
             sym = arg
         elseif arg.head == :(=) || arg.head == :kw
             sym,val = arg.args
+            lastval = val
         else
             error("Expression of type $arg not supported. Try only symbol or name = value")
         end
