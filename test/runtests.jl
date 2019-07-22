@@ -12,6 +12,7 @@ using Test
 @test apple + 1 == 2
 @test kiwi - 1 == 1
 @test kiwi ⊻ kiwi == 0
+@test_nowarn print(Fruit(apple | orange))
 
 @cenum(Boolean::Bool, alternativefact, fact)
 @test alternativefact == false
