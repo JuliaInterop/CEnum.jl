@@ -22,7 +22,7 @@ Base.read(io::IO, ::Type{T}) where {T<:Cenum} = T(read(io, basetype(T)))
 
 Base.isless(x::T, y::T) where {T<:Cenum} = isless(basetype(T)(x), basetype(T)(y))
 
-Base.Symbol(x::Cenum)::Symbol = get(namemap(typeof(x)), Integer(x), :UnkownMember)
+Base.Symbol(x::Cenum)::Symbol = get(namemap(typeof(x)), Integer(x), :UnknownMember)
 
 Base.print(io::IO, x::Cenum) = print(io, Symbol(x))
 
