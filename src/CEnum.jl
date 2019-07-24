@@ -6,6 +6,7 @@ import Core.Intrinsics.bitcast
 export @cenum
 
 function namemap end
+function name_value_pairs end
 
 """
     Cenum{T<:Integer}
@@ -50,9 +51,9 @@ function Base.show(io::IO, ::MIME"text/plain", t::Type{<:Cenum})
     print(io, "Cenum ")
     Base.show_datatype(io, t)
     print(io, ":")
-    for x in instances(t)
-        print(io, "\n", Symbol(x), " = ")
-        show(io, Integer(x))
+    for (s, i) in name_value_pairs(t)
+        print(io, "\n", Symbol(s), " = ")
+        show(io, Integer(i))
     end
 end
 
@@ -107,11 +108,11 @@ macro cenum(T, syms...)
             throw(ArgumentError("invalid name for Cenum $typename; \"$s\" is not a valid identifier"))
         end
         haskey(namemap, i) || (namemap[i] = s;)
-        push!(name_values, (s,i))
         if s in seen
             throw(ArgumentError("name \"$s\" in Cenum $typename is not unique"))
         end
         push!(seen, s)
+        push!(name_values, (s,i))
         if length(name_values) == 1
             lo = hi = i
         else
@@ -128,9 +129,10 @@ macro cenum(T, syms...)
             return bitcast($(esc(typename)), convert($(basetype), x))
         end
         CEnum.namemap(::Type{$(esc(typename))}) = $(esc(namemap))
+        CEnum.name_value_pairs(::Type{$(esc(typename))}) = $(esc(name_values))
         Base.typemin(x::Type{$(esc(typename))}) = $(esc(typename))($lo)
         Base.typemax(x::Type{$(esc(typename))}) = $(esc(typename))($hi)
-        let insts = ntuple(i->$(esc(typename))($(name_values[i-1][2])), $(length(name_values)))
+        let insts = ntuple(i->$(esc(typename))($name_values[i][2]), $(length(name_values)))
             Base.instances(::Type{$(esc(typename))}) = insts
         end
     end
