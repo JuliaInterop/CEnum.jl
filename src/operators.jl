@@ -13,3 +13,7 @@ for op in (:+, :-, :&, :|, :xor, :(==))
         ($op)(a::S, b::Cenum{T}) where {T<:Integer,S<:Integer} = ($op)(b, a)
     end
 end
+
+Base.convert(::Type{T1}, x::Cenum{T2}) where {T1<:Integer,T2<:Integer} = convert(T1, T2(x))
+
+(::Type{T})(x) where {T<:Cenum} = convert(T, x)
