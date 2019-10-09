@@ -132,7 +132,7 @@ macro cenum(T, syms...)
         CEnum.name_value_pairs(::Type{$(esc(typename))}) = $(esc(name_values))
         Base.typemin(x::Type{$(esc(typename))}) = $(esc(typename))($lo)
         Base.typemax(x::Type{$(esc(typename))}) = $(esc(typename))($hi)
-        let insts = ntuple(i->$(esc(typename))($name_values[i][2]), $(length(name_values)))
+        let insts = (Any[ $(esc(typename))(v[2]) for v in $name_values ]...,)
             Base.instances(::Type{$(esc(typename))}) = insts
         end
     end
