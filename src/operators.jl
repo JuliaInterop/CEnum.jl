@@ -15,5 +15,3 @@ for op in (:+, :-, :&, :|, :xor, :(==))
 end
 
 Base.convert(::Type{T1}, x::Cenum{T2}) where {T1<:Integer,T2<:Integer} = convert(T1, T2(x))
-
-(::Type{T})(x) where {T<:Cenum} = convert(T, x)
