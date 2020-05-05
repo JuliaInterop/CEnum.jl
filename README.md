@@ -1,7 +1,7 @@
 # CEnum
 
 [![Build Status](https://travis-ci.com/JuliaInterop/CEnum.jl.svg?branch=master)](https://travis-ci.com/JuliaInterop/CEnum.jl)
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/JuliaInterop/CEnum.jl?svg=true)](https://ci.appveyor.com/project/JuliaInterop/CEnum-jl)
+[![Build Status](https://github.com/JuliaInterop/CEnum.jl/workflows/CI/badge.svg)](https://github.com/JuliaInterop/CEnum.jl/actions)
 [![Codecov](https://codecov.io/gh/JuliaInterop/CEnum.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaInterop/CEnum.jl)
 
 This package provides a C-compatible enum for Julia.
