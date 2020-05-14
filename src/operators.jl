@@ -1,4 +1,4 @@
-import Base: +, -, *, &, |, xor, ==
+import Base: +, -, *, &, |, xor, ==, ~
 
 for op in (:+, :-, :&, :|, :xor, :(==))
     @eval begin
@@ -12,6 +12,10 @@ for op in (:+, :-, :&, :|, :xor, :(==))
         end
         ($op)(a::S, b::Cenum{T}) where {T<:Integer,S<:Integer} = ($op)(b, a)
     end
+end
+
+function ~(a::Cenum{T}) where {T<:Integer}
+    ~(T(a))
 end
 
 Base.convert(::Type{T1}, x::Cenum{T2}) where {T1<:Integer,T2<:Integer} = convert(T1, T2(x))
