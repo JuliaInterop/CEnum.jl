@@ -24,3 +24,6 @@ using Test
 @test Wed == 3 == suiyoubi
 @test Fri == 5
 @test Sat == 6
+
+# issue #11
+@test 0 - one == -1
