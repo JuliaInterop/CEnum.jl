@@ -1,7 +1,7 @@
 name = "CEnum"
 uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 authors = ["SimonDanisch <sdanisch@gmail.com>", "Gnimuc <qiyupei@gmail.com>"]
-version = "0.4.0"
+version = "0.4.1"
 
 [compat]
 julia = "1.0"
