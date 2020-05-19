@@ -10,7 +10,10 @@ for op in (:+, :-, :&, :|, :xor, :(==))
             N = promote_type(T, S)
             ($op)(N(a), N(b))
         end
-        ($op)(a::S, b::Cenum{T}) where {T<:Integer,S<:Integer} = ($op)(b, a)
+        function ($op)(a::T, b::Cenum{S}) where {T<:Integer,S<:Integer}
+            N = promote_type(T, S)
+            ($op)(N(a), N(b))
+        end
     end
 end
 
