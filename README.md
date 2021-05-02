@@ -1,6 +1,5 @@
 # CEnum
 
-[![Build Status](https://travis-ci.com/JuliaInterop/CEnum.jl.svg?branch=master)](https://travis-ci.com/JuliaInterop/CEnum.jl)
 [![Build Status](https://github.com/JuliaInterop/CEnum.jl/workflows/CI/badge.svg)](https://github.com/JuliaInterop/CEnum.jl/actions)
 [![Codecov](https://codecov.io/gh/JuliaInterop/CEnum.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaInterop/CEnum.jl)
 
