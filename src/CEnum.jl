@@ -68,7 +68,7 @@ macro cenum(T, syms...)
     end
     basetype = Int32
     typename = T
-    if isa(T, Expr) && T.head == :(::) && length(T.args) == 2 && isa(T.args[1], Symbol)
+    if isa(T, Expr) && T.head === :(::) && length(T.args) == 2 && isa(T.args[1], Symbol)
         typename = T.args[1]
         basetype = Core.eval(__module__, T.args[2])
         if !isa(basetype, DataType) || !(basetype <: Integer) || !isbitstype(basetype)
@@ -83,7 +83,7 @@ macro cenum(T, syms...)
     lo = hi = 0
     i = zero(basetype)
 
-    if length(syms) == 1 && syms[1] isa Expr && syms[1].head == :block
+    if length(syms) == 1 && syms[1] isa Expr && syms[1].head === :block
         syms = syms[1].args
     end
     for s in syms
@@ -93,7 +93,7 @@ macro cenum(T, syms...)
                 throw(ArgumentError("overflow in value \"$s\" of Cenum $typename"))
             end
         elseif isa(s, Expr) &&
-               (s.head == :(=) || s.head == :kw) &&
+               (s.head === :(=) || s.head === :kw) &&
                length(s.args) == 2 && isa(s.args[1], Symbol)
             i = Core.eval(__module__, s.args[2]) # allow exprs, e.g. uint128"1"
             if !isa(i, Integer)
