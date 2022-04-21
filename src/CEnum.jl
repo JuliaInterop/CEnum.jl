@@ -125,7 +125,6 @@ macro cenum(T, syms...)
         # enum definition
         Base.@__doc__(primitive type $(esc(typename)) <: Cenum{$(basetype)} $(sizeof(basetype) * 8) end)
         function $(esc(typename))(x::Integer)
-            x ≤ typemax(x) || enum_argument_error($(Expr(:quote, typename)), x)
             return bitcast($(esc(typename)), convert($(basetype), x))
         end
         CEnum.namemap(::Type{$(esc(typename))}) = $(esc(namemap))
