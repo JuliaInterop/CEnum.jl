@@ -2,6 +2,10 @@
 
 [![Build Status](https://github.com/JuliaInterop/CEnum.jl/workflows/CI/badge.svg)](https://github.com/JuliaInterop/CEnum.jl/actions)
 [![Codecov](https://codecov.io/gh/JuliaInterop/CEnum.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaInterop/CEnum.jl)
+[![pkgeval](https://juliahub.com/docs/CEnum/pkgeval.svg)](https://juliahub.com/ui/Packages/CEnum/0gyUJ)
+[![version](https://juliahub.com/docs/CEnum/version.svg)](https://juliahub.com/ui/Packages/CEnum/0gyUJ)
+[![deps](https://juliahub.com/docs/CEnum/deps.svg)](https://juliahub.com/ui/Packages/CEnum/0gyUJ?t=2)
+[![Genie Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/CEnum)](https://pkgs.genieframework.com?packages=CEnum)
 
 This package provides a C-compatible enum for Julia.
 
