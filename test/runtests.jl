@@ -27,3 +27,17 @@ using Test
 
 # issue #11
 @test 0 - one == -1
+
+# These tests are derived from https://en.cppreference.com/w/c/language/operator_arithmetic section "Shift operators"
+# Here we test to ensure our promotion behavior matches that of C
+@cenum var"##SHIFT_TEST_SIGNED#1"::Int64 begin
+    SHIFT_TEST_N1000 = -1000
+end
+@cenum var"##SHIFT_TEST_UNSIGNED#1"::UInt64 begin
+    SHIFT_TEST_123 = 0x123
+    SHIFT_TEST_10 = 0x10
+end
+@test SHIFT_TEST_123 << 1 == 0x246
+@test SHIFT_TEST_123 << 63 == 0x8000000000000000
+@test SHIFT_TEST_10 << 10 == 0x4000
+@test SHIFT_TEST_N1000 >> 1 == -500
