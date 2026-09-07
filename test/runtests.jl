@@ -41,3 +41,9 @@ end
 @test SHIFT_TEST_123 << 63 == 0x8000000000000000
 @test SHIFT_TEST_10 << 10 == 0x4000
 @test SHIFT_TEST_N1000 >> 1 == -500
+
+# issue #25/#68: showing the abstract `CEnum.Cenum` type (or other non-concrete
+# subtypes) used to error since `show_datatype`/`name_value_pairs` only work
+# on concrete Cenum types
+@test_nowarn show(devnull, MIME"text/plain"(), CEnum.Cenum)
+@test_nowarn show(devnull, MIME"text/plain"(), Fruit)
