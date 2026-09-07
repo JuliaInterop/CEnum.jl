@@ -146,7 +146,7 @@ macro cenum(T, syms...)
             push!(blk.args, :(const $(esc(sym)) = $(esc(typename))($i)))
         end
     end
-    for op in (:+, :-, :&, :|, :xor, :(==), :<<, :>>)
+    for op in (:+, :-, :*, :/, :%, :&, :|, :xor, :(==), :<<, :>>)
         push!(blk.args, quote
             function Base.$op(a::$(esc(typename)), b::CEnum.Cenum{S}) where {S<:Integer}
                 N = promote_type($(basetype), S)

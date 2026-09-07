@@ -11,6 +11,13 @@ using Test
 @test apple & orange == 0
 @test apple + 1 == 2
 @test kiwi - 1 == 1
+@test apple * 2 == 2
+@test kiwi / 2 == 1.0
+@test kiwi % 2 == 0
+@test -kiwi == -2
+@test apple * orange == 2
+@test kiwi / kiwi == 1.0
+@test kiwi % orange == 0
 @test kiwi ⊻ kiwi == 0
 @test ~orange == -3
 @test_nowarn print(devnull, Fruit(apple | orange))
