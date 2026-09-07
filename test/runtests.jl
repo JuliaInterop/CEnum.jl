@@ -15,6 +15,11 @@ using Test
 @test ~orange == -3
 @test_nowarn print(devnull, Fruit(apple | orange))
 
+@cenum(OtherFruit::Int64, pear=1)
+@test apple | pear == 1
+@test pear | apple == 1
+@test Base.cconvert(UInt64, pear) == UInt64(1)
+
 @cenum(Boolean::Bool, alternativefact, fact)
 @test alternativefact == false
 

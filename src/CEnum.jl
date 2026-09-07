@@ -17,7 +17,6 @@ abstract type Cenum{T<:Integer} end
 basetype(::Type{<:Cenum{T}}) where {T<:Integer} = T
 
 (::Type{T})(x::Cenum{T2}) where {T<:Integer,T2<:Integer} = T(bitcast(T2, x))::T
-Base.cconvert(::Type{T}, x::Cenum{T2}) where {T<:Integer,T2<:Integer} = T(x)
 Base.write(io::IO, x::Cenum{T}) where {T<:Integer} = write(io, T(x))
 Base.read(io::IO, ::Type{T}) where {T<:Cenum} = T(read(io, basetype(T)))
 
@@ -133,6 +132,7 @@ macro cenum(T, syms...)
         function $(esc(typename))(x::Integer)
             return bitcast($(esc(typename)), convert($(basetype), x))
         end
+        Base.cconvert(::Type{T}, x::$(esc(typename))) where {T<:Integer} = T(x)
         CEnum.namemap(::Type{$(esc(typename))}) = $(esc(namemap))
         CEnum.name_value_pairs(::Type{$(esc(typename))}) = $(esc(name_values))
         Base.typemin(x::Type{$(esc(typename))}) = $(esc(typename))($lo)
@@ -145,6 +145,22 @@ macro cenum(T, syms...)
         for (sym, i) in name_values
             push!(blk.args, :(const $(esc(sym)) = $(esc(typename))($i)))
         end
+    end
+    for op in (:+, :-, :&, :|, :xor, :(==), :<<, :>>)
+        push!(blk.args, quote
+            function Base.$op(a::$(esc(typename)), b::CEnum.Cenum{S}) where {S<:Integer}
+                N = promote_type($(basetype), S)
+                Base.$op(N(a), N(b))
+            end
+            function Base.$op(a::$(esc(typename)), b::S) where {S<:Integer}
+                N = promote_type($(basetype), S)
+                Base.$op(N(a), N(b))
+            end
+            function Base.$op(a::T, b::$(esc(typename))) where {T<:Integer}
+                N = promote_type(T, $(basetype))
+                Base.$op(N(a), N(b))
+            end
+        end)
     end
     push!(blk.args, :nothing)
     blk.head = :toplevel
