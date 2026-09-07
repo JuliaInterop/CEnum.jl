@@ -48,6 +48,12 @@ function Base.show(io::IO, ::MIME"text/plain", x::Cenum)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", t::Type{<:Cenum})
+    if !isconcretetype(t)
+        # e.g. the abstract `Cenum` type itself, or a `UnionAll` such as `Cenum{T}`;
+        # `show_datatype` and `name_value_pairs` only work for concrete Cenum types
+        show(io, t)
+        return
+    end
     print(io, "Cenum ")
     Base.show_datatype(io, t)
     print(io, ":")
