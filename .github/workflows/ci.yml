@@ -52,3 +52,21 @@ jobs:
           files: lcov.info
           # fork pull requests get no OIDC token and upload tokenless
           use_oidc: ${{ github.event.pull_request.head.repo.fork != true }}
+  aqua:
+    name: Aqua
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v3
+      - name: Run Aqua
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.activate(temp=true)
+          Pkg.develop(path=".")
+          Pkg.add(name="Aqua", version="0.8")
+          using Aqua, CEnum
+          Aqua.test_all(CEnum)
