@@ -1,5 +1,6 @@
 using CEnum
 using Test
+using Aqua
 
 # types have to be defined at top level
 @cenum(ZeroOne, zero, one)
@@ -26,6 +27,10 @@ function expand(ex)
 end
 
 @testset "CEnum" begin
+
+@testset "Aqua" begin
+    Aqua.test_all(CEnum)
+end
 
 @testset "values" begin
     @test zero == 0
