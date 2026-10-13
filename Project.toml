@@ -3,6 +3,7 @@ uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 version = "1.0.0"
 
 [compat]
+Test = "1.6"
 julia = "1.6"
 
 [extras]
