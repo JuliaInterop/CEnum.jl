@@ -245,12 +245,11 @@ function emit_cenum(typename::Symbol, basetype::DataType, members::Vector)
         CEnum.name_value_pairs(::Type{$T}) = $members
         Base.typemin(x::Type{$T}) = $T($lo)
         Base.typemax(x::Type{$T}) = $T($hi)
-        let insts = (Any[ $T(v[2]) for v in $members ]...,)
-            Base.instances(::Type{$T}) = insts
-        end
+        # spelled out, since a comprehension here is compiled anew for each type
+        Base.instances(::Type{$T}) = ($([:(bitcast($T, $i)) for (_, i) in members]...),)
     end
     for (sym, i) in members
-        push!(blk.args, :(const $(esc(sym)) = $T($i)))
+        push!(blk.args, :(const $(esc(sym)) = bitcast($T, $i)))
     end
     push!(blk.args, :nothing)
     blk.head = :toplevel
