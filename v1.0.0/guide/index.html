@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Guide · CEnum.jl</title><meta name="title" content="Guide · CEnum.jl"/><meta property="og:title" content="Guide · CEnum.jl"/><meta property="twitter:title" content="Guide · CEnum.jl"/><meta name="description" content="Documentation for CEnum.jl."/><meta property="og:description" content="Documentation for CEnum.jl."/><meta property="twitter:description" content="Documentation for CEnum.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">CEnum.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Guide</a><ul class="internal"><li><a class="tocitem" href="#Defining-an-enum"><span>Defining an enum</span></a></li><li><a class="tocitem" href="#Base-type"><span>Base type</span></a></li><li><a class="tocitem" href="#Values-without-a-name"><span>Values without a name</span></a></li><li><a class="tocitem" href="#Operators"><span>Operators</span></a></li><li><a class="tocitem" href="#Conversion-and-ccall"><span>Conversion and <code>ccall</code></span></a></li><li><a class="tocitem" href="#Names-and-members"><span>Names and members</span></a></li><li><a class="tocitem" href="#Dispatching-on-enums"><span>Dispatching on enums</span></a></li></ul></li><li><a class="tocitem" href="../reference/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Guide</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Guide</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaInterop/CEnum.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaInterop/CEnum.jl/blob/master/docs/src/guide.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Guide"><a class="docs-heading-anchor" href="#Guide">Guide</a><a id="Guide-1"></a><a class="docs-heading-anchor-permalink" href="#Guide" title="Permalink"></a></h1><h2 id="Defining-an-enum"><a class="docs-heading-anchor" href="#Defining-an-enum">Defining an enum</a><a id="Defining-an-enum-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-an-enum" title="Permalink"></a></h2><p>The members are listed after the type name, either on one line or in a <code>begin</code> block. A member without a value gets the value of the previous member plus one, and the first member starts at zero.</p><pre><code class="language-julia-repl hljs">julia&gt; @cenum Fruit apple=1 orange=2 kiwi=2
+
+julia&gt; @cenum Day begin
+           Mon = 1
+           Tue
+           Wed
+       end
+
+julia&gt; Tue
+Tue::Day = 2</code></pre><p>Each member becomes a constant in the module where <code>@cenum</code> is called. A value can be any expression that evaluates to an integer when the macro is expanded, such as <code>1 &lt;&lt; 4</code> or a constant defined earlier in the module.</p><p>Several members may share a value. They are then the same object, which is shown under the first of its names:</p><pre><code class="language-julia-repl hljs">julia&gt; orange === kiwi
+true
+
+julia&gt; kiwi
+orange::Fruit = 2</code></pre><h2 id="Base-type"><a class="docs-heading-anchor" href="#Base-type">Base type</a><a id="Base-type-1"></a><a class="docs-heading-anchor-permalink" href="#Base-type" title="Permalink"></a></h2><p>The integer type used to store the enum can be given after the name. It has to be a primitive integer type.</p><pre><code class="language-julia-repl hljs">julia&gt; @cenum Color::UInt8 red green blue=0x10
+
+julia&gt; sizeof(Color)
+1
+
+julia&gt; Integer(blue)
+0x10</code></pre><p>Without one, the base type is <code>Int32</code>, which is what C compilers use for most enums. If a value does not fit in an <code>Int32</code>, the first of <code>UInt32</code>, <code>Int64</code> and <code>UInt64</code> that can hold all the values is used instead:</p><pre><code class="language-julia-repl hljs">julia&gt; @cenum Mask small=20 large=5123123123
+
+julia&gt; typeof(Integer(large))
+Int64</code></pre><p>When a C header is translated, give the base type the C compiler chose, so that the size of the enum matches in <code>ccall</code> and in struct layouts.</p><h2 id="Values-without-a-name"><a class="docs-heading-anchor" href="#Values-without-a-name">Values without a name</a><a id="Values-without-a-name-1"></a><a class="docs-heading-anchor-permalink" href="#Values-without-a-name" title="Permalink"></a></h2><p>As in C, an enum can hold any value of its base type. Converting an integer never fails as long as it fits the base type:</p><pre><code class="language-julia-repl hljs">julia&gt; Fruit(2)
+orange::Fruit = 2
+
+julia&gt; Fruit(7)
+Fruit(7)</code></pre><p>This is what makes enums usable as bit flags, see below.</p><h2 id="Operators"><a class="docs-heading-anchor" href="#Operators">Operators</a><a id="Operators-1"></a><a class="docs-heading-anchor-permalink" href="#Operators" title="Permalink"></a></h2><p>Members can be compared with integers and with members of other enums. The comparison is made on the underlying values.</p><pre><code class="language-julia-repl hljs">julia&gt; apple == 1
+true
+
+julia&gt; apple &lt; orange
+true
+
+julia&gt; apple in Set([1, 2])
+true</code></pre><p><code>+</code>, <code>-</code>, <code>*</code>, <code>÷</code>, <code>&amp;</code>, <code>|</code>, <code>xor</code>, <code>~</code>, <code>&lt;&lt;</code> and <code>&gt;&gt;</code> work between members and integers. They return an integer, not an enum; wrap the result in the type to get an enum back.</p><pre><code class="language-julia-repl hljs">julia&gt; @cenum Flags::UInt32 readable=1 writable=2 executable=4
+
+julia&gt; readable | writable
+0x00000003
+
+julia&gt; Flags(readable | writable)
+Flags(0x00000003)
+
+julia&gt; (Flags(0x03) &amp; writable) != 0
+true
+
+julia&gt; apple + 1
+2</code></pre><h2 id="Conversion-and-ccall"><a class="docs-heading-anchor" href="#Conversion-and-ccall">Conversion and <code>ccall</code></a><a id="Conversion-and-ccall-1"></a><a class="docs-heading-anchor-permalink" href="#Conversion-and-ccall" title="Permalink"></a></h2><p><code>Integer(x)</code> gives the underlying value in the base type, and any integer type can be used as a constructor in the same way.</p><pre><code class="language-julia-repl hljs">julia&gt; Integer(orange)
+2
+
+julia&gt; UInt8(orange)
+0x02</code></pre><p>A <code>@cenum</code> type is a primitive type with the size of its base type, so it can be used directly as an argument or return type in <code>ccall</code>, and as a field type in structs that mirror C structs. An enum value can also be passed where the C function expects the underlying integer type.</p><pre><code class="language-julia hljs">ccall((:set_color, libfoo), Cvoid, (Color,), green)
+ccall((:get_color, libfoo), Color, ())</code></pre><p><code>read(io, T)</code> and <code>write(io, x)</code> read and write the underlying integer.</p><h2 id="Names-and-members"><a class="docs-heading-anchor" href="#Names-and-members">Names and members</a><a id="Names-and-members-1"></a><a class="docs-heading-anchor-permalink" href="#Names-and-members" title="Permalink"></a></h2><pre><code class="language-julia-repl hljs">julia&gt; instances(Fruit)
+(apple, orange, orange)
+
+julia&gt; Symbol(apple)
+:apple
+
+julia&gt; string(orange)
+&quot;orange&quot;
+
+julia&gt; typemin(Day), typemax(Day)
+(Mon, Wed)</code></pre><p><code>instances</code> has one entry for each name, so a value with several names appears more than once. <code>Symbol</code> and <code>string</code> give the first name of a value, and <code>:UnknownMember</code> if it has none.</p><p>Displaying the type lists its members:</p><pre><code class="language-julia-repl hljs">julia&gt; Fruit
+Cenum Fruit:
+apple = 1
+orange = 2
+kiwi = 2</code></pre><h2 id="Dispatching-on-enums"><a class="docs-heading-anchor" href="#Dispatching-on-enums">Dispatching on enums</a><a id="Dispatching-on-enums-1"></a><a class="docs-heading-anchor-permalink" href="#Dispatching-on-enums" title="Permalink"></a></h2><p>All types defined with <code>@cenum</code> are subtypes of <a href="../reference/#CEnum.Cenum"><code>CEnum.Cenum</code></a>, which is parameterized by the base type. It is not exported.</p><pre><code class="language-julia-repl hljs">julia&gt; Fruit &lt;: CEnum.Cenum{Int32}
+true
+
+julia&gt; describe(x::CEnum.Cenum) = string(typeof(x), &quot; with value &quot;, Integer(x));
+
+julia&gt; describe(apple)
+&quot;Fruit with value 1&quot;</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../reference/">Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.19.0 on <span class="colophon-date" title="Tuesday 13 October 2026 20:17">Tuesday 13 October 2026</span>. Using Julia version 1.13.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
