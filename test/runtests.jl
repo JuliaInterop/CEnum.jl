@@ -120,6 +120,13 @@ end
     @test sprint(show, MIME"text/plain"(), CEnum.Cenum) == sprint(show, CEnum.Cenum)
 end
 
+@testset "macro parsing" begin
+    @test CEnum.parse_cenum(@__MODULE__, :Foo, (:a, :(b = 5), :c, :(d = 5))) ==
+          (:Foo, Int32, [(:a, 0), (:b, 5), (:c, 6), (:d, 5)])
+    @test CEnum.parse_cenum(@__MODULE__, :(Foo::UInt8), (:(begin a = 0x10; b end),)) ==
+          (:Foo, UInt8, [(:a, 0x10), (:b, 0x11)])
+end
+
 @testset "macro errors" begin
     @test_throws ArgumentError expand(:(@cenum Foo))
     @test_throws ArgumentError expand(:(@cenum Foo::Float64 a))
