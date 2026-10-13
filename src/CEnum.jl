@@ -17,6 +17,9 @@ abstract type Cenum{T<:Integer} end
 basetype(::Type{<:Cenum{T}}) where {T<:Integer} = T
 
 (::Type{T})(x::Cenum{T2}) where {T<:Integer,T2<:Integer} = T(bitcast(T2, x))::T
+# defined once rather than per type, so that a package can define `T(x::T)`
+# for its own type without overwriting a method
+(::Type{T})(x::T) where {T<:Cenum} = x
 Base.convert(::Type{T1}, x::Cenum{T2}) where {T1<:Integer,T2<:Integer} = convert(T1, T2(x))
 Base.cconvert(::Type{T}, x::Cenum) where {T<:Integer} = T(x)
 Base.write(io::IO, x::Cenum{T}) where {T<:Integer} = write(io, T(x))
@@ -252,7 +255,6 @@ function emit_cenum(typename::Symbol, basetype::DataType, members::Vector)
         function $T(x::Integer)
             return bitcast($T, convert($basetype, x))
         end
-        $T(x::$T) = x
         CEnum.namemap(::Type{$T}) = $names
         CEnum.name_value_pairs(::Type{$T}) = $members
         Base.typemin(x::Type{$T}) = $T($lo)
