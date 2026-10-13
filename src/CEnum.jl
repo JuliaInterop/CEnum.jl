@@ -154,28 +154,23 @@ function parse_cenum(mod::Module, T, syms)
         throw(ArgumentError("invalid type expression for Cenum $T"))
     end
     seen = Set{Symbol}()
-    values = Tuple{Symbol,BigInt}[]
-    i = big(0)
+    raw = Tuple{Symbol,Union{Nothing,Integer}}[] # `nothing`: previous value plus one
 
     if length(syms) == 1 && syms[1] isa Expr && syms[1].head === :block
         syms = syms[1].args
     end
     for s in syms
         s isa LineNumberNode && continue
-        if isa(s, Symbol)
-            if basetype !== nothing && i > typemax(basetype)
-                throw(ArgumentError("overflow in value \"$s\" of Cenum $typename"))
-            end
-        elseif isa(s, Expr) &&
-               (s.head === :(=) || s.head === :kw) &&
-               length(s.args) == 2 && isa(s.args[1], Symbol)
-            i = Core.eval(mod, s.args[2]) # allow exprs, e.g. uint128"1"
-            if !isa(i, Integer)
+        v = nothing
+        if isa(s, Expr) &&
+           (s.head === :(=) || s.head === :kw) &&
+           length(s.args) == 2 && isa(s.args[1], Symbol)
+            v = Core.eval(mod, s.args[2]) # allow exprs, e.g. uint128"1"
+            if !isa(v, Integer)
                 throw(ArgumentError("invalid value for Cenum $typename, $s; values must be integers"))
             end
-            i = BigInt(basetype === nothing ? i : convert(basetype, i))
             s = s.args[1]
-        else
+        elseif !isa(s, Symbol)
             throw(ArgumentError(string("invalid argument for Cenum ", typename, ": ", s)))
         end
         if !Base.isidentifier(s)
@@ -185,19 +180,42 @@ function parse_cenum(mod::Module, T, syms)
             throw(ArgumentError("name \"$s\" in Cenum $typename is not unique"))
         end
         push!(seen, s)
-        push!(values, (s, i))
-        i += 1
+        push!(raw, (s, v))
     end
     if basetype === nothing
-        lo, hi = isempty(values) ? (0, 0) : extrema(last, values)
-        k = findfirst(B -> typemin(B) <= lo && hi <= typemax(B), DEFAULT_BASETYPES)
-        if k === nothing
-            throw(ArgumentError("values of Cenum $typename do not fit in any of $(join(DEFAULT_BASETYPES, ", ")); give a base type"))
+        for B in DEFAULT_BASETYPES
+            members = assign_values(B, raw)
+            members isa Vector && return typename, B, members
         end
-        basetype = DEFAULT_BASETYPES[k]
+        throw(ArgumentError("values of Cenum $typename do not fit in any of $(join(DEFAULT_BASETYPES, ", ")); give a base type"))
     end
-    members = Tuple{Symbol,basetype}[(s, v) for (s, v) in values]
+    members = assign_values(basetype, raw)
+    if !isa(members, Vector)
+        s, v = members
+        v === nothing && throw(ArgumentError("overflow in value \"$s\" of Cenum $typename"))
+        throw(InexactError(:convert, basetype, v))
+    end
     return typename, basetype, members
+end
+
+# Give the members in `raw` values of type `B`. Returns the `(name, value)`
+# vector, or the first entry of `raw` whose value does not fit in `B`.
+function assign_values(::Type{B}, raw) where {B<:Integer}
+    members = Tuple{Symbol,B}[]
+    i = zero(B)      # value of the next member without an explicit one
+    overflow = false # that value would be past typemax(B)
+    for (s, v) in raw
+        if v === nothing
+            overflow && return (s, v)
+        else
+            typemin(B) <= v <= typemax(B) || return (s, v)
+            i = convert(B, v)
+        end
+        push!(members, (s, i))
+        overflow = i == typemax(B)
+        overflow || (i = convert(B, i + oneunit(B)))
+    end
+    return members
 end
 
 # Build the definitions for the output of `parse_cenum`.
