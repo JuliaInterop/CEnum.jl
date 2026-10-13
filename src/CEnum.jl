@@ -223,17 +223,28 @@ end
 # Evaluate the value expression `ex` of a member in `mod`. Earlier members can
 # be used in it, as integers of the base type, like enumerators in C.
 function eval_value(mod::Module, ex, seen, basetype, raw)
-    if uses(ex, seen)
+    used = Set{Symbol}()
+    collect_used!(used, ex, seen)
+    if !isempty(used)
         r = try_assign(basetype, raw)
         if r !== nothing
-            ex = Expr(:let, Expr(:block, (:($s = $v) for (s, v) in r[2])...), ex)
+            binds = (:($s = $v) for (s, v) in r[2] if s in used)
+            ex = Expr(:let, Expr(:block, binds...), ex)
         end
     end
     v = Core.eval(mod, ex) # allow exprs, e.g. uint128"1"
     return v isa Cenum ? Integer(v) : v
 end
 
-uses(ex, names) = ex isa Symbol ? ex in names : ex isa Expr ? any(a -> uses(a, names), ex.args) : false
+# the symbols in `ex` that are in `names`
+function collect_used!(used, ex, names)
+    if ex isa Symbol
+        ex in names && push!(used, ex)
+    elseif ex isa Expr
+        foreach(a -> collect_used!(used, a, names), ex.args)
+    end
+    return used
+end
 
 # The base type and members for `raw`, or `nothing` if the values do not fit;
 # without a base type, the first of `DEFAULT_BASETYPES` that holds them all.
