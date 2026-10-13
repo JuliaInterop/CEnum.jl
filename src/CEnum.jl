@@ -18,6 +18,7 @@ basetype(::Type{<:Cenum{T}}) where {T<:Integer} = T
 
 (::Type{T})(x::Cenum{T2}) where {T<:Integer,T2<:Integer} = T(bitcast(T2, x))::T
 Base.convert(::Type{T1}, x::Cenum{T2}) where {T1<:Integer,T2<:Integer} = convert(T1, T2(x))
+Base.cconvert(::Type{T}, x::Cenum) where {T<:Integer} = T(x)
 Base.write(io::IO, x::Cenum{T}) where {T<:Integer} = write(io, T(x))
 Base.read(io::IO, ::Type{T}) where {T<:Cenum} = T(read(io, basetype(T)))
 
@@ -82,9 +83,15 @@ const BINARY_OPS = (:+, :-, :*, :div, :&, :|, :xor, :(==), :isless, :<<, :>>)
 # base types tried in turn when `@cenum` is not given one
 const DEFAULT_BASETYPES = (Int32, UInt32, Int64, UInt64)
 
+# These are defined once on `Cenum` rather than for each type. Some of them
+# (the bitwise ones with an `Integer` argument) invalidate compiled code in
+# Base, but defining them per type only moves the same invalidations to the
+# first `@cenum`, and costs load and precompile time for every type.
 for op in BINARY_OPS
-    @eval function Base.$op(a::Cenum{T}, b::Cenum{S}) where {T<:Integer,S<:Integer}
-        Base.$op(T(a), S(b))
+    @eval begin
+        Base.$op(a::Cenum{T}, b::Cenum{S}) where {T<:Integer,S<:Integer} = Base.$op(T(a), S(b))
+        Base.$op(a::Cenum{T}, b::Integer) where {T<:Integer} = Base.$op(T(a), b)
+        Base.$op(a::Integer, b::Cenum{T}) where {T<:Integer} = Base.$op(a, T(b))
     end
 end
 
@@ -234,7 +241,6 @@ function emit_cenum(typename::Symbol, basetype::DataType, members::Vector)
             return bitcast($T, convert($basetype, x))
         end
         $T(x::$T) = x
-        Base.cconvert(::Type{I}, x::$T) where {I<:Integer} = I(x)
         CEnum.namemap(::Type{$T}) = $names
         CEnum.name_value_pairs(::Type{$T}) = $members
         Base.typemin(x::Type{$T}) = $T($lo)
@@ -245,22 +251,6 @@ function emit_cenum(typename::Symbol, basetype::DataType, members::Vector)
     end
     for (sym, i) in members
         push!(blk.args, :(const $(esc(sym)) = $T($i)))
-    end
-    # The Cenum-Integer methods are defined per type rather than once on
-    # `Cenum`, since e.g. `==(::Cenum, ::Integer)` would invalidate a large
-    # amount of compiled code in Base when CEnum is loaded.
-    for op in BINARY_OPS
-        push!(blk.args, quote
-            function Base.$op(a::$T, b::CEnum.Cenum{S}) where {S<:Integer}
-                Base.$op($basetype(a), S(b))
-            end
-            function Base.$op(a::$T, b::Integer)
-                Base.$op($basetype(a), b)
-            end
-            function Base.$op(a::Integer, b::$T)
-                Base.$op(a, $basetype(b))
-            end
-        end)
     end
     push!(blk.args, :nothing)
     blk.head = :toplevel
