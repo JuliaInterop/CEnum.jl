@@ -1,11 +1,10 @@
 # CEnum
 
-[![Build Status](https://github.com/JuliaInterop/CEnum.jl/workflows/CI/badge.svg)](https://github.com/JuliaInterop/CEnum.jl/actions)
+[![Build Status](https://github.com/JuliaInterop/CEnum.jl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/JuliaInterop/CEnum.jl/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Codecov](https://codecov.io/gh/JuliaInterop/CEnum.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaInterop/CEnum.jl)
-[![pkgeval](https://juliahub.com/docs/CEnum/pkgeval.svg)](https://juliahub.com/ui/Packages/CEnum/0gyUJ)
-[![version](https://juliahub.com/docs/CEnum/version.svg)](https://juliahub.com/ui/Packages/CEnum/0gyUJ)
-[![deps](https://juliahub.com/docs/CEnum/deps.svg)](https://juliahub.com/ui/Packages/CEnum/0gyUJ?t=2)
-[![Genie Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/CEnum)](https://pkgs.genieframework.com?packages=CEnum)
+[![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/C/CEnum.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/C/CEnum.html)
+[![version](https://img.shields.io/github/v/release/JuliaInterop/CEnum.jl)](https://github.com/JuliaInterop/CEnum.jl/releases/latest)
+[![Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Fmonthly_downloads%2FCEnum&query=total_requests&suffix=%2Fmonth&label=Downloads)](https://juliapkgstats.com/pkg/CEnum)
 
 This package provides a C-compatible enum for Julia.
 
