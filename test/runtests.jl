@@ -12,12 +12,10 @@ using Test
 @test apple + 1 == 2
 @test kiwi - 1 == 1
 @test apple * 2 == 2
-@test kiwi / 2 == 1.0
-@test kiwi % 2 == 0
+@test kiwi ÷ 2 == 1
 @test -kiwi == -2
 @test apple * orange == 2
-@test kiwi / kiwi == 1.0
-@test kiwi % orange == 0
+@test kiwi ÷ kiwi == 1
 @test kiwi ⊻ kiwi == 0
 @test ~orange == -3
 @test_nowarn print(devnull, Fruit(apple | orange))
@@ -53,6 +51,14 @@ end
 @test SHIFT_TEST_123 << 63 == 0x8000000000000000
 @test SHIFT_TEST_10 << 10 == 0x4000
 @test SHIFT_TEST_N1000 >> 1 == -500
+@test typeof(apple << Int64(1)) == Int32
+@test SHIFT_TEST_10 >> -1 == 0x20
+
+# mixed signedness follows Base integer promotion
+@test SHIFT_TEST_10 != -1
+@test SHIFT_TEST_10 != SHIFT_TEST_N1000
+@test SHIFT_TEST_10 + (-1) == 0x0f
+@test SHIFT_TEST_10 * SHIFT_TEST_N1000 === UInt64(0x10) * -1000
 
 # issue #25/#68: showing the abstract `CEnum.Cenum` type (or other non-concrete
 # subtypes) used to error since `show_datatype`/`name_value_pairs` only work

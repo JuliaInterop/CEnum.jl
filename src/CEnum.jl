@@ -146,19 +146,16 @@ macro cenum(T, syms...)
             push!(blk.args, :(const $(esc(sym)) = $(esc(typename))($i)))
         end
     end
-    for op in (:+, :-, :*, :/, :%, :&, :|, :xor, :(==), :<<, :>>)
+    for op in (:+, :-, :*, :div, :&, :|, :xor, :(==), :<<, :>>)
         push!(blk.args, quote
             function Base.$op(a::$(esc(typename)), b::CEnum.Cenum{S}) where {S<:Integer}
-                N = promote_type($(basetype), S)
-                Base.$op(N(a), N(b))
+                Base.$op($(basetype)(a), S(b))
             end
-            function Base.$op(a::$(esc(typename)), b::S) where {S<:Integer}
-                N = promote_type($(basetype), S)
-                Base.$op(N(a), N(b))
+            function Base.$op(a::$(esc(typename)), b::Integer)
+                Base.$op($(basetype)(a), b)
             end
-            function Base.$op(a::T, b::$(esc(typename))) where {T<:Integer}
-                N = promote_type(T, $(basetype))
-                Base.$op(N(a), N(b))
+            function Base.$op(a::Integer, b::$(esc(typename)))
+                Base.$op(a, $(basetype)(b))
             end
         end)
     end

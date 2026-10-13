@@ -1,10 +1,9 @@
-import Base: +, -, *, /, %, &, |, xor, ==, ~, <<, >>
+import Base: +, -, *, div, &, |, xor, ==, ~, <<, >>
 
-for op in (:+, :-, :*, :/, :%, :&, :|, :xor, :(==), :<<, :>>)
+for op in (:+, :-, :*, :div, :&, :|, :xor, :(==), :<<, :>>)
     @eval begin
         function ($op)(a::Cenum{T}, b::Cenum{S}) where {T<:Integer,S<:Integer}
-            N = promote_type(T, S)
-            ($op)(N(a), N(b))
+            ($op)(T(a), S(b))
         end
     end
 end
