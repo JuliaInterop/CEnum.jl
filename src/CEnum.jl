@@ -17,6 +17,7 @@ abstract type Cenum{T<:Integer} end
 basetype(::Type{<:Cenum{T}}) where {T<:Integer} = T
 
 (::Type{T})(x::Cenum{T2}) where {T<:Integer,T2<:Integer} = T(bitcast(T2, x))::T
+Base.convert(::Type{T1}, x::Cenum{T2}) where {T1<:Integer,T2<:Integer} = convert(T1, T2(x))
 Base.write(io::IO, x::Cenum{T}) where {T<:Integer} = write(io, T(x))
 Base.read(io::IO, ::Type{T}) where {T<:Cenum} = T(read(io, basetype(T)))
 
@@ -57,7 +58,7 @@ function Base.show(io::IO, ::MIME"text/plain", t::Type{<:Cenum})
     Base.show_datatype(io, t)
     print(io, ":")
     for (s, i) in name_value_pairs(t)
-        print(io, "\n", Symbol(s), " = ")
+        print(io, "\n", s, " = ")
         show(io, Integer(i))
     end
 end
@@ -65,8 +66,57 @@ end
 # give Cenum types scalar behavior in broadcasting
 Base.broadcastable(x::Cenum) = Ref(x)
 
-@noinline enum_argument_error(typename, x) = throw(ArgumentError(string("input value out of range for Cenum $(typename): $x")))
+# binary operators defined between Cenums and between a Cenum and an Integer;
+# operands are unwrapped to the base type and the result is a plain integer
+const BINARY_OPS = (:+, :-, :*, :div, :&, :|, :xor, :(==), :<<, :>>)
 
+for op in BINARY_OPS
+    @eval function Base.$op(a::Cenum{T}, b::Cenum{S}) where {T<:Integer,S<:Integer}
+        Base.$op(T(a), S(b))
+    end
+end
+
+Base.:~(a::Cenum{T}) where {T<:Integer} = ~T(a)
+Base.:-(a::Cenum{T}) where {T<:Integer} = -T(a)
+
+"""
+    @cenum EnumName[::BaseType] value1[=x] value2[=y]
+
+Create a [`Cenum`](@ref) subtype with name `EnumName` and members `value1`,
+`value2`, and so on. It works like `Base.@enum`, but follows the semantics of
+C enums:
+
+* several members may share the same value;
+* `EnumName(x)` accepts any `x` representable in `BaseType`, not only the values
+  of the named members; a value with no member prints as `UnknownMember`;
+* members can be combined with integers and with each other using `==`, `+`,
+  `-`, `*`, `÷`, `&`, `|`, `xor`, `~`, `<<` and `>>`. The result is an integer
+  of the base type (promoted as usual for integers), not an `EnumName`.
+
+`BaseType` defaults to `Int32` and must be a primitive integer type. A member
+without an explicit value gets the value of the previous member plus one,
+starting from zero. Members can also be listed in a `begin` block.
+
+# Examples
+```julia
+julia> @cenum Fruit apple=1 orange=2 kiwi=2
+
+julia> orange == kiwi
+true
+
+julia> apple | orange
+3
+
+julia> @cenum Color::UInt8 begin
+           red
+           green
+           blue = 0x10
+       end
+
+julia> Integer(green)
+0x01
+```
+"""
 macro cenum(T, syms...)
     if isempty(syms)
         throw(ArgumentError("no arguments given for Cenum $T"))
@@ -141,12 +191,13 @@ macro cenum(T, syms...)
             Base.instances(::Type{$(esc(typename))}) = insts
         end
     end
-    if isa(typename, Symbol)
-        for (sym, i) in name_values
-            push!(blk.args, :(const $(esc(sym)) = $(esc(typename))($i)))
-        end
+    for (sym, i) in name_values
+        push!(blk.args, :(const $(esc(sym)) = $(esc(typename))($i)))
     end
-    for op in (:+, :-, :*, :div, :&, :|, :xor, :(==), :<<, :>>)
+    # The Cenum-Integer methods are defined per type rather than once on
+    # `Cenum`, since e.g. `==(::Cenum, ::Integer)` would invalidate a large
+    # amount of compiled code in Base when CEnum is loaded.
+    for op in BINARY_OPS
         push!(blk.args, quote
             function Base.$op(a::$(esc(typename)), b::CEnum.Cenum{S}) where {S<:Integer}
                 Base.$op($(basetype)(a), S(b))
@@ -163,7 +214,5 @@ macro cenum(T, syms...)
     blk.head = :toplevel
     return blk
 end
-
-include("operators.jl")
 
 end # module

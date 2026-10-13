@@ -10,21 +10,26 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - 'min'
           - '1'
           - 'nightly'
         os:
           - ubuntu-latest
           - windows-latest
           - macOS-latest
+        exclude:
+          # no Julia 1.6 build for Apple silicon
+          - version: 'min'
+            os: macOS-latest
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.version }}
       - uses: julia-actions/cache@v3
-      - uses: julia-actions/julia-buildpkg@latest
-      - uses: julia-actions/julia-runtest@latest
-      - uses: julia-actions/julia-processcoverage@latest
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-runtest@v1
+      - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v7
         with:
-          file: lcov.info
+          files: lcov.info
