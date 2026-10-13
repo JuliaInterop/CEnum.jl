@@ -42,6 +42,7 @@ end
     @test sizeof(Boolean) == 1
     @test Fruit(2) === orange === kiwi
     @test Fruit(0x02) === orange
+    @test Fruit(apple) === apple
 end
 
 @testset "operators" begin
@@ -77,6 +78,10 @@ end
     @test SHIFT_TEST_10 * SHIFT_TEST_N1000 === UInt64(0x10) * -1000
 
     @test apple < orange
+    @test apple < 2 && 0 < apple
+    @test apple < SHIFT_TEST_10
+    @test hash(apple) == hash(1)
+    @test apple in Set([1])
     @test !(orange < kiwi)
     @test sort([orange, apple]) == [apple, orange]
     @test ([apple, orange] .== apple) == [true, false]
@@ -115,6 +120,7 @@ end
     @test sprint(show, apple; context = :compact => true) == "apple"
     @test sprint(show, MIME"text/plain"(), apple) == "apple::Fruit = 1"
     @test sprint(show, MIME"text/plain"(), Fruit(7)) == "UnknownMember::Fruit = 7"
+    @test sprint(show, Fruit(7); context = :module => @__MODULE__) == "Fruit(7)"
     @test sprint(show, MIME"text/plain"(), Fruit) == "Cenum Fruit:\napple = 1\norange = 2\nkiwi = 2"
     # issue #25: non-concrete Cenum types
     @test sprint(show, MIME"text/plain"(), CEnum.Cenum) == sprint(show, CEnum.Cenum)
@@ -125,6 +131,11 @@ end
           (:Foo, Int32, [(:a, 0), (:b, 5), (:c, 6), (:d, 5)])
     @test CEnum.parse_cenum(@__MODULE__, :(Foo::UInt8), (:(begin a = 0x10; b end),)) ==
           (:Foo, UInt8, [(:a, 0x10), (:b, 0x11)])
+    # issue #27: without a base type, pick the first that holds all values
+    @test CEnum.parse_cenum(@__MODULE__, :Foo, (:(a = typemax(Int32)), :b))[2] == UInt32
+    @test CEnum.parse_cenum(@__MODULE__, :Foo, (:(a = -1), :(b = 0x80000000)))[2] == Int64
+    @test CEnum.parse_cenum(@__MODULE__, :Foo, (:(a = typemax(UInt64)),))[2] == UInt64
+    @test_throws ArgumentError CEnum.parse_cenum(@__MODULE__, :Foo, (:(a = -1), :(b = typemax(UInt64))))
 end
 
 @testset "macro errors" begin
@@ -133,6 +144,7 @@ end
     @test_throws ArgumentError expand(:(@cenum Foo::Integer a))
     @test_throws ArgumentError expand(:(@cenum 1 a))
     @test_throws ArgumentError expand(:(@cenum Foo::UInt8 a=255 b))
+    @test_throws ArgumentError expand(:(@cenum Foo::Bool a b c))
     @test_throws ArgumentError expand(:(@cenum Foo a=1.5))
     @test_throws ArgumentError expand(:(@cenum Foo a+1))
     @test_throws ArgumentError expand(:(@cenum Foo $(Symbol("a b"))))
