@@ -21,7 +21,6 @@ basetype(::Type{<:Cenum{T}}) where {T<:Integer} = T
 # for its own type without overwriting a method
 (::Type{T})(x::T) where {T<:Cenum} = x
 Base.convert(::Type{T1}, x::Cenum{T2}) where {T1<:Integer,T2<:Integer} = convert(T1, T2(x))
-Base.cconvert(::Type{T}, x::Cenum) where {T<:Integer} = T(x)
 Base.write(io::IO, x::Cenum{T}) where {T<:Integer} = write(io, T(x))
 Base.read(io::IO, ::Type{T}) where {T<:Cenum} = T(read(io, basetype(T)))
 
