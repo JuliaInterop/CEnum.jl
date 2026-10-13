@@ -119,7 +119,7 @@ end
     @test sprint(show, apple; context = :module => nothing) == "$(@__MODULE__).apple"
     @test sprint(show, apple; context = :compact => true) == "apple"
     @test sprint(show, MIME"text/plain"(), apple) == "apple::Fruit = 1"
-    @test sprint(show, MIME"text/plain"(), Fruit(7)) == "UnknownMember::Fruit = 7"
+    @test sprint(show, MIME"text/plain"(), Fruit(7)) == "Fruit(7)"
     @test sprint(show, Fruit(7); context = :module => @__MODULE__) == "Fruit(7)"
     @test sprint(show, MIME"text/plain"(), Fruit) == "Cenum Fruit:\napple = 1\norange = 2\nkiwi = 2"
     # issue #25: non-concrete Cenum types
