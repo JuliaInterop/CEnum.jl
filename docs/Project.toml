@@ -1,0 +1,9 @@
+[deps]
+CEnum = "fa961155-64e5-5f13-b03f-caf6b980ea82"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+
+[sources]
+CEnum = {path = "/tmp/claude-1488822/-home-viralbshah/905ee83a-e638-4880-9f25-cf21cdbf189c/scratchpad/docs"}
+
+[compat]
+Documenter = "1"
