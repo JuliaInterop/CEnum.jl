@@ -29,6 +29,13 @@ Base.Symbol(x::Cenum)::Symbol = get(namemap(typeof(x)), Integer(x), :UnknownMemb
 
 Base.print(io::IO, x::Cenum) = print(io, Symbol(x))
 
+# `Base.isvisible` is internal; without it names are always module-qualified
+@static if isdefined(Base, :isvisible)
+    isvisible(sym::Symbol, def::Module, from::Module) = Base.isvisible(sym, def, from)::Bool
+else
+    isvisible(sym::Symbol, def::Module, from::Module) = false
+end
+
 function Base.show(io::IO, x::Cenum)
     if !haskey(namemap(typeof(x)), Integer(x))
         # no member has this value
@@ -42,7 +49,7 @@ function Base.show(io::IO, x::Cenum)
     if !get(io, :compact, false)::Bool
         from = get(io, :module, Main)
         def = typeof(x).name.module
-        if from === nothing || !Base.isvisible(sym, def, from)
+        if from === nothing || !isvisible(sym, def, from)
             show(io, def)
             print(io, ".")
         end
@@ -51,6 +58,11 @@ function Base.show(io::IO, x::Cenum)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", x::Cenum)
+    if !haskey(namemap(typeof(x)), Integer(x))
+        # no member has this value
+        show(io, x)
+        return
+    end
     print(io, x, "::")
     show(IOContext(io, :compact => true), typeof(x))
     print(io, " = ")
@@ -60,12 +72,12 @@ end
 function Base.show(io::IO, ::MIME"text/plain", t::Type{<:Cenum})
     if !isconcretetype(t)
         # e.g. the abstract `Cenum` type itself, or a `UnionAll` such as `Cenum{T}`;
-        # `show_datatype` and `name_value_pairs` only work for concrete Cenum types
+        # `name_value_pairs` is only defined for concrete Cenum types
         show(io, t)
         return
     end
     print(io, "Cenum ")
-    Base.show_datatype(io, t)
+    show(io, t)
     print(io, ":")
     for (s, i) in name_value_pairs(t)
         print(io, "\n", s, " = ")
