@@ -1,5 +1,6 @@
 # CEnum
 
+[![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliainterop.github.io/CEnum.jl/dev/)
 [![Build Status](https://github.com/JuliaInterop/CEnum.jl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/JuliaInterop/CEnum.jl/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Codecov](https://codecov.io/gh/JuliaInterop/CEnum.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaInterop/CEnum.jl)
 [![PkgEval](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/C/CEnum.svg)](https://juliaci.github.io/NanosoldierReports/pkgeval_badges/C/CEnum.html)
