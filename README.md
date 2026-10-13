@@ -23,5 +23,26 @@ julia> d == f
 true
 ```
 
+## Usage
+
+```julia
+@cenum Fruit apple=1 orange=2 kiwi=2      # base type defaults to Int32
+@cenum Color::UInt8 red green blue=0x10   # explicit base type; red == 0, green == 1
+@cenum Day begin                          # block form
+    Mon = 1
+    Tue
+end
+```
+
+Compared to `Base.@enum`, a type defined with `@cenum`
+
+* allows several names for the same value (`orange == kiwi`);
+* can hold any value of its base type, as in C: `Fruit(7)` is valid and prints as `UnknownMember`;
+* supports `==`, `+`, `-`, `*`, `÷`, `&`, `|`, `xor`, `~`, `<<` and `>>` with integers and other `@cenum` values.
+  These return plain integers, so wrap the result to get an enum back: `Fruit(apple | orange)`.
+
+`Integer(x)` (or any integer type) gives the underlying value, `instances(T)` lists the members and
+`Symbol(x)` gives the first name defined for the value. All types defined with `@cenum` are subtypes of `CEnum.Cenum{BaseType}`.
+
 ## Credit
 The original version is written by [SimonDanisch](https://github.com/SimonDanisch) in [this PR](https://github.com/JuliaInterop/Clang.jl/pull/162).
