@@ -21,13 +21,22 @@ Base.convert(::Type{T1}, x::Cenum{T2}) where {T1<:Integer,T2<:Integer} = convert
 Base.write(io::IO, x::Cenum{T}) where {T<:Integer} = write(io, T(x))
 Base.read(io::IO, ::Type{T}) where {T<:Cenum} = T(read(io, basetype(T)))
 
-Base.isless(x::T, y::T) where {T<:Cenum} = isless(basetype(T)(x), basetype(T)(y))
+# consistent with `==`, which compares the underlying integers
+Base.hash(x::Cenum, h::UInt) = hash(Integer(x), h)
 
 Base.Symbol(x::Cenum)::Symbol = get(namemap(typeof(x)), Integer(x), :UnknownMember)
 
 Base.print(io::IO, x::Cenum) = print(io, Symbol(x))
 
 function Base.show(io::IO, x::Cenum)
+    if !haskey(namemap(typeof(x)), Integer(x))
+        # no member has this value
+        show(io, typeof(x))
+        print(io, "(")
+        show(io, Integer(x))
+        print(io, ")")
+        return
+    end
     sym = Symbol(x)
     if !get(io, :compact, false)::Bool
         from = get(io, :module, Main)
@@ -66,9 +75,12 @@ end
 # give Cenum types scalar behavior in broadcasting
 Base.broadcastable(x::Cenum) = Ref(x)
 
-# binary operators defined between Cenums and between a Cenum and an Integer;
+# binary functions defined between Cenums and between a Cenum and an Integer;
 # operands are unwrapped to the base type and the result is a plain integer
-const BINARY_OPS = (:+, :-, :*, :div, :&, :|, :xor, :(==), :<<, :>>)
+const BINARY_OPS = (:+, :-, :*, :div, :&, :|, :xor, :(==), :isless, :<<, :>>)
+
+# base types tried in turn when `@cenum` is not given one
+const DEFAULT_BASETYPES = (Int32, UInt32, Int64, UInt64)
 
 for op in BINARY_OPS
     @eval function Base.$op(a::Cenum{T}, b::Cenum{S}) where {T<:Integer,S<:Integer}
@@ -88,12 +100,14 @@ C enums:
 
 * several members may share the same value;
 * `EnumName(x)` accepts any `x` representable in `BaseType`, not only the values
-  of the named members; a value with no member prints as `UnknownMember`;
-* members can be combined with integers and with each other using `==`, `+`,
-  `-`, `*`, `÷`, `&`, `|`, `xor`, `~`, `<<` and `>>`. The result is an integer
-  of the base type (promoted as usual for integers), not an `EnumName`.
+  of the named members;
+* members can be combined with integers and with each other using `==`, `<`,
+  `+`, `-`, `*`, `÷`, `&`, `|`, `xor`, `~`, `<<` and `>>`. Arithmetic gives an
+  integer of the base type (promoted as usual for integers), not an `EnumName`.
 
-`BaseType` defaults to `Int32` and must be a primitive integer type. A member
+`BaseType` must be a primitive integer type. It defaults to `Int32`, or to the
+first of `UInt32`, `Int64` and `UInt64` that can hold all values if `Int32`
+cannot, which is the choice C compilers make. A member
 without an explicit value gets the value of the previous member plus one,
 starting from zero. Members can also be listed in a `begin` block.
 
@@ -128,7 +142,7 @@ function parse_cenum(mod::Module, T, syms)
     if isempty(syms)
         throw(ArgumentError("no arguments given for Cenum $T"))
     end
-    basetype = Int32
+    basetype = nothing # chosen from the values unless given
     typename = T
     if isa(T, Expr) && T.head === :(::) && length(T.args) == 2 && isa(T.args[1], Symbol)
         typename = T.args[1]
@@ -140,28 +154,23 @@ function parse_cenum(mod::Module, T, syms)
         throw(ArgumentError("invalid type expression for Cenum $T"))
     end
     seen = Set{Symbol}()
-    members = Tuple{Symbol,basetype}[]
-    i = zero(basetype)
+    raw = Tuple{Symbol,Union{Nothing,Integer}}[] # `nothing`: previous value plus one
 
     if length(syms) == 1 && syms[1] isa Expr && syms[1].head === :block
         syms = syms[1].args
     end
     for s in syms
         s isa LineNumberNode && continue
-        if isa(s, Symbol)
-            if i == typemin(basetype) && !isempty(members)
-                throw(ArgumentError("overflow in value \"$s\" of Cenum $typename"))
-            end
-        elseif isa(s, Expr) &&
-               (s.head === :(=) || s.head === :kw) &&
-               length(s.args) == 2 && isa(s.args[1], Symbol)
-            i = Core.eval(mod, s.args[2]) # allow exprs, e.g. uint128"1"
-            if !isa(i, Integer)
+        v = nothing
+        if isa(s, Expr) &&
+           (s.head === :(=) || s.head === :kw) &&
+           length(s.args) == 2 && isa(s.args[1], Symbol)
+            v = Core.eval(mod, s.args[2]) # allow exprs, e.g. uint128"1"
+            if !isa(v, Integer)
                 throw(ArgumentError("invalid value for Cenum $typename, $s; values must be integers"))
             end
-            i = convert(basetype, i)
             s = s.args[1]
-        else
+        elseif !isa(s, Symbol)
             throw(ArgumentError(string("invalid argument for Cenum ", typename, ": ", s)))
         end
         if !Base.isidentifier(s)
@@ -171,10 +180,42 @@ function parse_cenum(mod::Module, T, syms)
             throw(ArgumentError("name \"$s\" in Cenum $typename is not unique"))
         end
         push!(seen, s)
-        push!(members, (s, i))
-        i += oneunit(i)
+        push!(raw, (s, v))
+    end
+    if basetype === nothing
+        for B in DEFAULT_BASETYPES
+            members = assign_values(B, raw)
+            members isa Vector && return typename, B, members
+        end
+        throw(ArgumentError("values of Cenum $typename do not fit in any of $(join(DEFAULT_BASETYPES, ", ")); give a base type"))
+    end
+    members = assign_values(basetype, raw)
+    if !isa(members, Vector)
+        s, v = members
+        v === nothing && throw(ArgumentError("overflow in value \"$s\" of Cenum $typename"))
+        throw(InexactError(:convert, basetype, v))
     end
     return typename, basetype, members
+end
+
+# Give the members in `raw` values of type `B`. Returns the `(name, value)`
+# vector, or the first entry of `raw` whose value does not fit in `B`.
+function assign_values(::Type{B}, raw) where {B<:Integer}
+    members = Tuple{Symbol,B}[]
+    i = zero(B)      # value of the next member without an explicit one
+    overflow = false # that value would be past typemax(B)
+    for (s, v) in raw
+        if v === nothing
+            overflow && return (s, v)
+        else
+            typemin(B) <= v <= typemax(B) || return (s, v)
+            i = convert(B, v)
+        end
+        push!(members, (s, i))
+        overflow = i == typemax(B)
+        overflow || (i = convert(B, i + oneunit(B)))
+    end
+    return members
 end
 
 # Build the definitions for the output of `parse_cenum`.
@@ -192,6 +233,7 @@ function emit_cenum(typename::Symbol, basetype::DataType, members::Vector)
         function $T(x::Integer)
             return bitcast($T, convert($basetype, x))
         end
+        $T(x::$T) = x
         Base.cconvert(::Type{I}, x::$T) where {I<:Integer} = I(x)
         CEnum.namemap(::Type{$T}) = $names
         CEnum.name_value_pairs(::Type{$T}) = $members
