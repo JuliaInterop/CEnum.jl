@@ -131,7 +131,9 @@ C enums:
 first of `UInt32`, `Int64` and `UInt64` that can hold all values if `Int32`
 cannot, which is the choice C compilers make. A member
 without an explicit value gets the value of the previous member plus one,
-starting from zero. Members can also be listed in a `begin` block.
+starting from zero. A value can be any expression that gives an integer or a
+`Cenum`, and can use the earlier members of the same enum, as in C:
+`@cenum Flags a=1 b=a<<1 ab=a|b`. Members can also be listed in a `begin` block.
 
 # Examples
 ```julia
@@ -187,7 +189,7 @@ function parse_cenum(mod::Module, T, syms)
         if isa(s, Expr) &&
            (s.head === :(=) || s.head === :kw) &&
            length(s.args) == 2 && isa(s.args[1], Symbol)
-            v = Core.eval(mod, s.args[2]) # allow exprs, e.g. uint128"1"
+            v = eval_value(mod, s.args[2], seen, basetype, raw)
             if !isa(v, Integer)
                 throw(ArgumentError("invalid value for Cenum $typename, $s; values must be integers"))
             end
@@ -205,10 +207,8 @@ function parse_cenum(mod::Module, T, syms)
         push!(raw, (s, v))
     end
     if basetype === nothing
-        for B in DEFAULT_BASETYPES
-            members = assign_values(B, raw)
-            members isa Vector && return typename, B, members
-        end
+        r = try_assign(nothing, raw)
+        r === nothing || return typename, r...
         throw(ArgumentError("values of Cenum $typename do not fit in any of $(join(DEFAULT_BASETYPES, ", ")); give a base type"))
     end
     members = assign_values(basetype, raw)
@@ -218,6 +218,31 @@ function parse_cenum(mod::Module, T, syms)
         throw(InexactError(:convert, basetype, v))
     end
     return typename, basetype, members
+end
+
+# Evaluate the value expression `ex` of a member in `mod`. Earlier members can
+# be used in it, as integers of the base type, like enumerators in C.
+function eval_value(mod::Module, ex, seen, basetype, raw)
+    if uses(ex, seen)
+        r = try_assign(basetype, raw)
+        if r !== nothing
+            ex = Expr(:let, Expr(:block, (:($s = $v) for (s, v) in r[2])...), ex)
+        end
+    end
+    v = Core.eval(mod, ex) # allow exprs, e.g. uint128"1"
+    return v isa Cenum ? Integer(v) : v
+end
+
+uses(ex, names) = ex isa Symbol ? ex in names : ex isa Expr ? any(a -> uses(a, names), ex.args) : false
+
+# The base type and members for `raw`, or `nothing` if the values do not fit;
+# without a base type, the first of `DEFAULT_BASETYPES` that holds them all.
+function try_assign(basetype, raw)
+    for B in (basetype === nothing ? DEFAULT_BASETYPES : (basetype,))
+        members = assign_values(B, raw)
+        members isa Vector && return B, members
+    end
+    return nothing
 end
 
 # Give the members in `raw` values of type `B`. Returns the `(name, value)`
