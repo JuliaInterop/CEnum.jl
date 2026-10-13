@@ -33,6 +33,7 @@ true
     Mon = 1
     Tue
 end
+@cenum Flags read=1 write=read<<1 rw=read|write   # values can use earlier members
 ```
 
 Compared to `Base.@enum`, a type defined with `@cenum`

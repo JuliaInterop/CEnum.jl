@@ -131,6 +131,10 @@ end
           (:Foo, Int32, [(:a, 0), (:b, 5), (:c, 6), (:d, 5)])
     @test CEnum.parse_cenum(@__MODULE__, :(Foo::UInt8), (:(begin a = 0x10; b end),)) ==
           (:Foo, UInt8, [(:a, 0x10), (:b, 0x11)])
+    # values can use earlier members, and members of other enums
+    @test CEnum.parse_cenum(@__MODULE__, :Foo, (:(a = 1), :(b = a << 1), :c, :(d = a | c), :(e = d)))[3] ==
+          [(:a, 1), (:b, 2), (:c, 3), (:d, 3), (:e, 3)]
+    @test CEnum.parse_cenum(@__MODULE__, :(Foo::UInt8), (:(a = orange), :(b = a + apple)))[3] == [(:a, 0x02), (:b, 0x03)]
     # issue #27: without a base type, pick the first that holds all values
     @test CEnum.parse_cenum(@__MODULE__, :Foo, (:(a = typemax(Int32)), :b))[2] == UInt32
     @test CEnum.parse_cenum(@__MODULE__, :Foo, (:(a = -1), :(b = 0x80000000)))[2] == Int64
