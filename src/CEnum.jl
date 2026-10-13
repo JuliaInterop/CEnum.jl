@@ -118,6 +118,13 @@ julia> Integer(green)
 ```
 """
 macro cenum(T, syms...)
+    return emit_cenum(parse_cenum(__module__, T, syms)...)
+end
+
+# Parse the arguments of `@cenum` into the type name, the base type and the
+# `(name, value)` members in order of definition. Base type and value
+# expressions are evaluated in `mod`.
+function parse_cenum(mod::Module, T, syms)
     if isempty(syms)
         throw(ArgumentError("no arguments given for Cenum $T"))
     end
@@ -125,7 +132,7 @@ macro cenum(T, syms...)
     typename = T
     if isa(T, Expr) && T.head === :(::) && length(T.args) == 2 && isa(T.args[1], Symbol)
         typename = T.args[1]
-        basetype = Core.eval(__module__, T.args[2])
+        basetype = Core.eval(mod, T.args[2])
         if !isa(basetype, DataType) || !(basetype <: Integer) || !isbitstype(basetype)
             throw(ArgumentError("invalid base type for Cenum $typename, $T=::$basetype; base type must be an integer primitive type"))
         end
@@ -133,9 +140,7 @@ macro cenum(T, syms...)
         throw(ArgumentError("invalid type expression for Cenum $T"))
     end
     seen = Set{Symbol}()
-    name_values = Tuple{Symbol,basetype}[]
-    namemap = Dict{basetype,Symbol}()
-    lo = hi = 0
+    members = Tuple{Symbol,basetype}[]
     i = zero(basetype)
 
     if length(syms) == 1 && syms[1] isa Expr && syms[1].head === :block
@@ -144,13 +149,13 @@ macro cenum(T, syms...)
     for s in syms
         s isa LineNumberNode && continue
         if isa(s, Symbol)
-            if i == typemin(basetype) && !isempty(name_values)
+            if i == typemin(basetype) && !isempty(members)
                 throw(ArgumentError("overflow in value \"$s\" of Cenum $typename"))
             end
         elseif isa(s, Expr) &&
                (s.head === :(=) || s.head === :kw) &&
                length(s.args) == 2 && isa(s.args[1], Symbol)
-            i = Core.eval(__module__, s.args[2]) # allow exprs, e.g. uint128"1"
+            i = Core.eval(mod, s.args[2]) # allow exprs, e.g. uint128"1"
             if !isa(i, Integer)
                 throw(ArgumentError("invalid value for Cenum $typename, $s; values must be integers"))
             end
@@ -162,51 +167,56 @@ macro cenum(T, syms...)
         if !Base.isidentifier(s)
             throw(ArgumentError("invalid name for Cenum $typename; \"$s\" is not a valid identifier"))
         end
-        haskey(namemap, i) || (namemap[i] = s;)
         if s in seen
             throw(ArgumentError("name \"$s\" in Cenum $typename is not unique"))
         end
         push!(seen, s)
-        push!(name_values, (s,i))
-        if length(name_values) == 1
-            lo = hi = i
-        else
-            lo = min(lo, i)
-            hi = max(hi, i)
-        end
+        push!(members, (s, i))
         i += oneunit(i)
     end
+    return typename, basetype, members
+end
+
+# Build the definitions for the output of `parse_cenum`.
+function emit_cenum(typename::Symbol, basetype::DataType, members::Vector)
+    T = esc(typename)
+    # the first name defined for a value is the one it prints as
+    names = Dict{basetype,Symbol}()
+    for (sym, i) in members
+        get!(names, i, sym)
+    end
+    lo, hi = isempty(members) ? (0, 0) : extrema(last, members)
     blk = quote
         # enum definition
-        Base.@__doc__(primitive type $(esc(typename)) <: Cenum{$(basetype)} $(sizeof(basetype) * 8) end)
-        function $(esc(typename))(x::Integer)
-            return bitcast($(esc(typename)), convert($(basetype), x))
+        Base.@__doc__(primitive type $T <: Cenum{$basetype} $(sizeof(basetype) * 8) end)
+        function $T(x::Integer)
+            return bitcast($T, convert($basetype, x))
         end
-        Base.cconvert(::Type{T}, x::$(esc(typename))) where {T<:Integer} = T(x)
-        CEnum.namemap(::Type{$(esc(typename))}) = $(esc(namemap))
-        CEnum.name_value_pairs(::Type{$(esc(typename))}) = $(esc(name_values))
-        Base.typemin(x::Type{$(esc(typename))}) = $(esc(typename))($lo)
-        Base.typemax(x::Type{$(esc(typename))}) = $(esc(typename))($hi)
-        let insts = (Any[ $(esc(typename))(v[2]) for v in $name_values ]...,)
-            Base.instances(::Type{$(esc(typename))}) = insts
+        Base.cconvert(::Type{I}, x::$T) where {I<:Integer} = I(x)
+        CEnum.namemap(::Type{$T}) = $names
+        CEnum.name_value_pairs(::Type{$T}) = $members
+        Base.typemin(x::Type{$T}) = $T($lo)
+        Base.typemax(x::Type{$T}) = $T($hi)
+        let insts = (Any[ $T(v[2]) for v in $members ]...,)
+            Base.instances(::Type{$T}) = insts
         end
     end
-    for (sym, i) in name_values
-        push!(blk.args, :(const $(esc(sym)) = $(esc(typename))($i)))
+    for (sym, i) in members
+        push!(blk.args, :(const $(esc(sym)) = $T($i)))
     end
     # The Cenum-Integer methods are defined per type rather than once on
     # `Cenum`, since e.g. `==(::Cenum, ::Integer)` would invalidate a large
     # amount of compiled code in Base when CEnum is loaded.
     for op in BINARY_OPS
         push!(blk.args, quote
-            function Base.$op(a::$(esc(typename)), b::CEnum.Cenum{S}) where {S<:Integer}
-                Base.$op($(basetype)(a), S(b))
+            function Base.$op(a::$T, b::CEnum.Cenum{S}) where {S<:Integer}
+                Base.$op($basetype(a), S(b))
             end
-            function Base.$op(a::$(esc(typename)), b::Integer)
-                Base.$op($(basetype)(a), b)
+            function Base.$op(a::$T, b::Integer)
+                Base.$op($basetype(a), b)
             end
-            function Base.$op(a::Integer, b::$(esc(typename)))
-                Base.$op(a, $(basetype)(b))
+            function Base.$op(a::Integer, b::$T)
+                Base.$op(a, $basetype(b))
             end
         end)
     end
